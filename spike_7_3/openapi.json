@@ -1,0 +1,419 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LogiTrack Fleet API \u2014 Spike 7.3",
+    "description": "API RESTful para gesti\u00f3n de veh\u00edculos con validaci\u00f3n estricta de esquemas Pydantic",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/vehiculos": {
+      "post": {
+        "summary": "Registrar un nuevo veh\u00edculo",
+        "operationId": "crear_vehiculo_api_v1_vehiculos_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar veh\u00edculos registrados",
+        "operationId": "listar_vehiculos_api_v1_vehiculos_get",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EstadoVehiculo"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar por estado operativo",
+              "title": "Estado"
+            },
+            "description": "Filtrar por estado operativo"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VehiculoResponse"
+                  },
+                  "title": "Response Listar Vehiculos Api V1 Vehiculos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehiculos/{vehiculo_id}": {
+      "get": {
+        "summary": "Obtener un veh\u00edculo por ID",
+        "operationId": "obtener_vehiculo_api_v1_vehiculos__vehiculo_id__get",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vehiculo Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Actualizar un veh\u00edculo parcialmente o completamente",
+        "operationId": "actualizar_vehiculo_api_v1_vehiculos__vehiculo_id__put",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vehiculo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Eliminar un veh\u00edculo de la flota",
+        "operationId": "eliminar_vehiculo_api_v1_vehiculos__vehiculo_id__delete",
+        "parameters": [
+          {
+            "name": "vehiculo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vehiculo Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EstadoVehiculo": {
+        "type": "string",
+        "enum": [
+          "ACTIVO",
+          "EN_TRANSITO",
+          "MANTENIMIENTO",
+          "INACTIVO"
+        ],
+        "title": "EstadoVehiculo"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VehiculoCreate": {
+        "properties": {
+          "placa": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 7,
+            "pattern": "^[A-Z]{3}-\\d{3,4}$",
+            "title": "Placa",
+            "description": "Placa con formato oficial (ej. MXN-1234)"
+          },
+          "modelo": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "title": "Modelo",
+            "description": "Marca y modelo"
+          },
+          "capacidad_kg": {
+            "type": "number",
+            "maximum": 50000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Capacidad Kg",
+            "description": "Capacidad m\u00e1xima en kilogramos"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoVehiculo",
+            "default": "ACTIVO"
+          }
+        },
+        "type": "object",
+        "required": [
+          "placa",
+          "modelo",
+          "capacidad_kg"
+        ],
+        "title": "VehiculoCreate"
+      },
+      "VehiculoResponse": {
+        "properties": {
+          "placa": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 7,
+            "pattern": "^[A-Z]{3}-\\d{3,4}$",
+            "title": "Placa",
+            "description": "Placa con formato oficial (ej. MXN-1234)"
+          },
+          "modelo": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "title": "Modelo",
+            "description": "Marca y modelo"
+          },
+          "capacidad_kg": {
+            "type": "number",
+            "maximum": 50000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Capacidad Kg",
+            "description": "Capacidad m\u00e1xima en kilogramos"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoVehiculo",
+            "default": "ACTIVO"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "fecha_registro": {
+            "type": "string",
+            "title": "Fecha Registro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "placa",
+          "modelo",
+          "capacidad_kg",
+          "id",
+          "fecha_registro"
+        ],
+        "title": "VehiculoResponse"
+      },
+      "VehiculoUpdate": {
+        "properties": {
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "capacidad_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacidad Kg"
+          },
+          "estado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoVehiculo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "VehiculoUpdate"
+      }
+    }
+  }
+}
