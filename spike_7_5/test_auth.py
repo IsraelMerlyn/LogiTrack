@@ -5,23 +5,35 @@ import httpx
 
 PYTHON_BIN = sys.executable
 
+def wait_for_server(base_url, timeout=5.0):
+    start = time.perf_counter()
+    while time.perf_counter() - start < timeout:
+        try:
+            r = httpx.get(f"{base_url}/openapi.json", timeout=0.5)
+            if r.status_code == 200:
+                return True
+        except Exception:
+            time.sleep(0.1)
+    return False
+
 def run_security_tests():
-    print("🚀 Iniciando Servidor de Seguridad y RBAC para Pruebas...")
-    proc = subprocess.Popen(
-        [PYTHON_BIN, "spike_7_5/app_auth.py"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
+    print(" Iniciando Servidor de Seguridad y RBAC para Pruebas...")
     
-    time.sleep(1.5)
-    base_url = "http://127.0.0.1:8000"
+    # Quitamos el DEVNULL para que, si falla el servidor, la terminal nos muestre el error exacto
+    proc = subprocess.Popen([PYTHON_BIN, "spike_7_5/app_auth.py"])
+    
+    base_url = "http://127.0.0.1:8005"
+    if not wait_for_server(base_url, timeout=5.0):
+        proc.terminate()
+        raise RuntimeError("❌ El servidor no logró arrancar. Revisa si hay errores de Uvicorn impresos arriba.")
+
     client = httpx.Client(base_url=base_url)
 
     try:
         print("\n--- 1. Registro de Usuarios (Argon2id Hash) ---")
         client.post("/api/v1/auth/register", json={"email": "admin@logitrack.com", "password": "AdminSecret123!", "rol": "ADMIN"})
         client.post("/api/v1/auth/register", json={"email": "cliente@logitrack.com", "password": "ClientSecret123!", "rol": "CLIENTE"})
-        print("✅ Usuarios registrado exitosamente con contraseñas hasheadas en Argon2id.")
+        print(" Usuarios registrados exitosamente con contraseñas hasheadas en Argon2id.")
 
         print("\n--- 2. Autenticación y Emisión de JWT ---")
         res_admin_login = client.post("/api/v1/auth/login", json={"email": "admin@logitrack.com", "password": "AdminSecret123!"})
@@ -29,7 +41,7 @@ def run_security_tests():
         
         res_client_login = client.post("/api/v1/auth/login", json={"email": "cliente@logitrack.com", "password": "ClientSecret123!"})
         client_token = res_client_login.json()["access_token"]
-        print("✅ Tokens JWT emitidos y recibidos exitosamente.")
+        print(" Tokens JWT emitidos y recibidos exitosamente.")
 
         print("\n--- 3. Verificación de Acceso Permitido (ADMIN -> Admin Endpoint) ---")
         headers_admin = {"Authorization": f"Bearer {admin_token}"}
@@ -52,7 +64,7 @@ def run_security_tests():
         print(f"Token Inválido: {res_bad_token.status_code} (Esperado: 401)")
         assert res_bad_token.status_code == 401
 
-        print("\n✅ TODAS LAS PRUEBAS DE SEGURIDAD, HASHING ARGON2 Y AUTORIZACIÓN RBAC PASARON EXITOSAMENTE.")
+        print("\n TODAS LAS PRUEBAS DE SEGURIDAD, HASHING ARGON2 Y AUTORIZACIÓN RBAC PASARON EXITOSAMENTE.")
 
     finally:
         client.close()
