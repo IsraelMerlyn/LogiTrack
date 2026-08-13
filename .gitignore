@@ -1,0 +1,13 @@
+# Entorno virtual
+venv/
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Bases de datos SQLite de prueba
+*.db
+*.sqlite3
+
+# Archivos de caché del sistema
+.DS_Store
