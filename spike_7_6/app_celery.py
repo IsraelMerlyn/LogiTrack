@@ -1,5 +1,10 @@
 import time
-from fastapi import FastAPI, status, HTTPException
+import sys
+import os
+
+sys.path.append(os.path.dirname(__file__))
+
+from fastapi import FastAPI, status
 from pydantic import BaseModel
 from celery.result import AsyncResult
 from tasks import celery_app, calcular_ruta_optima
@@ -14,11 +19,10 @@ class RutaRequest(BaseModel):
     origen: str
     destino: str
 
-# 1. Endpoint Síncrono (Bloqueante - Mala Práctica para Tareas Pesadas)
 @app.post("/api/v1/rutas/sincrono", status_code=status.HTTP_200_OK)
 def calcular_sincrono(payload: RutaRequest):
     t0 = time.perf_counter()
-    time.sleep(3.0)  # Bloquea el hilo principal de FastAPI
+    time.sleep(3.0)
     t1 = time.perf_counter()
     return {
         "metodo": "SINCRONO_BLOQUEANTE",
@@ -27,12 +31,11 @@ def calcular_sincrono(payload: RutaRequest):
         "estado": "COMPLETADO"
     }
 
-# 2. Endpoint Asíncrono (No Bloqueante - Buenas Prácticas)
 @app.post("/api/v1/rutas/asincrono", status_code=status.HTTP_202_ACCEPTED)
 def calcular_asincrono(payload: RutaRequest):
     t0 = time.perf_counter()
     
-    # Despachar la tarea al Broker de Celery (Inmediato)
+    # Despachar tarea con el nombre explícito registrado
     task = calcular_ruta_optima.delay(payload.envio_id, payload.origen, payload.destino)
     
     t1 = time.perf_counter()
@@ -44,7 +47,6 @@ def calcular_asincrono(payload: RutaRequest):
         "mensaje": "Tarea encolada con éxito para procesamiento en segundo plano."
     }
 
-# 3. Consulta de Estado de la Tarea Asíncrona
 @app.get("/api/v1/rutas/status/{task_id}")
 def obtener_estado_tarea(task_id: str):
     task_result = AsyncResult(task_id, app=celery_app)

@@ -18,13 +18,14 @@ celery_app.conf.update(
     task_track_started=True
 )
 
-@celery_app.task(bind=True, max_retries=3, default_retry_delay=5)
+# Fijamos el nombre explícito de la tarea
+@celery_app.task(name="calcular_ruta_optima", bind=True, max_retries=3, default_retry_delay=5)
 def calcular_ruta_optima(self, envio_id: str, origen: str, destino: str):
     """
-    Tarea asíncrona que simula un cálculo pesado de optimización de rutas (I/O & CPU).
+    Tarea asíncrona que simula un cálculo pesado de optimización de rutas.
     """
     try:
-        time.sleep(3.0)  # Simula cálculo pesado de matriz de distancias
+        time.sleep(3.0)  # Simula cálculo de matriz de distancias
         
         resultado = {
             "envio_id": envio_id,
