@@ -30,15 +30,13 @@ def measure_framework(name, cmd, port):
     try:
         startup_time_ms = wait_for_port(url)
         
-        # Medir memoria RSS del proceso en reposo
         p_info = psutil.Process(proc.pid)
-        # Incluir procesos hijos si Uvicorn o Django abren subprocessos
         mem_bytes = p_info.memory_info().rss
         for child in p_info.children(recursive=True):
             mem_bytes += child.memory_info().rss
         mem_mb = mem_bytes / (1024 * 1024)
 
-        # Warm-up (10 peticiones no contabilizadas)
+        # Warm-up (10 peticiones)
         for _ in range(10):
             requests.get(url)
 
@@ -76,7 +74,7 @@ if __name__ == "__main__":
 
     targets = [
         ("Flask (WSGI)", [PYTHON_BIN, "spike_7_2/app_flask.py"], 8000),
-        ("Django (WSGI)", [PYTHON_BIN, "spike_7_2/app_django.py", "runserver", "127.0.0.1:8001", "--noreload"], 8001),
+        ("Django (WSGI)", [PYTHON_BIN, "spike_7_2/app_django.py"], 8001),
         ("FastAPI (ASGI)", [PYTHON_BIN, "spike_7_2/app_fastapi.py"], 8002)
     ]
 
@@ -86,7 +84,7 @@ if __name__ == "__main__":
             res = measure_framework(name, cmd, port)
             results.append(res)
         except Exception as e:
-            print(f"❌ Error en {name}: {e}")
+            print(f" Error en {name}: {e}")
 
     print("\n" + "=" * 65)
     print(f"{'Framework':<18} | {'Arranque (ms)':<13} | {'RAM (MB)':<10} | {'Lat. Media':<10} | {'Lat. P95'}")
