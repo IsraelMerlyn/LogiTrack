@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: logitrack_db
+    environment:
+      POSTGRES_USER: logitrack_user
+      POSTGRES_PASSWORD: logitrack_pass
+      POSTGRES_DB: logitrack_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logitrack_user -d logitrack_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - logitrack_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: logitrack_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - logitrack_net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logitrack_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://logitrack_user:logitrack_pass@db:5432/logitrack_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - logitrack_net
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logitrack_worker
+    command: ["celery", "-A", "tasks.celery_app", "worker", "--loglevel=info"]
+    environment:
+      - DATABASE_URL=postgresql://logitrack_user:logitrack_pass@db:5432/logitrack_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - logitrack_net
+
+volumes:
+  postgres_data:
+
+networks:
+  logitrack_net:
+    driver: bridge
